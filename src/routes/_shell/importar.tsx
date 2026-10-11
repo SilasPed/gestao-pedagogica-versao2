@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, controlClass, errText } from "@/components/ui";
+import { Button, PageHeader, controlClass, errText } from "@/components/ui";
 import { commitImport, previewImport } from "@/lib/school/api";
 import { IMPORT_FIELDS, type ImportKind } from "@/lib/school/constants";
 import { downloadDemo430, downloadTemplate, readSpreadsheet } from "@/lib/school/files";
@@ -171,41 +171,35 @@ function ImportPage() {
   }
 
   const sample = (sheet?.rows.slice(headerIndex, headerIndex + 6) ?? []).map((row) => headers.map((_, index) => cellText(row[index])));
+  const step = report ? 6 : busy === "commit" ? 5 : preview ? 4 : sheet ? 3 : 1;
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl">Importar planilha</h1>
-          <p className="max-w-2xl text-sm text-pretty text-muted">
-            Excel ou CSV. A nota entra pela matrícula, não pela ordem das linhas. Célula vazia não vira zero. Nada é gravado antes da confirmação.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="soft" onClick={() => downloadTemplate(kind)}>Modelo desta importação</Button>
-          <Button type="button" variant="ghost" onClick={() => downloadDemo430()}>Planilha fictícia de 430 alunos</Button>
-        </div>
-      </div>
-
-      <section className="grid gap-3 md:grid-cols-3">
-        {KINDS.map((item) => (
-          <button key={item.id} type="button" onClick={() => changeKind(item.id)} className={choice(kind === item.id)}>
-            {item.label}
-          </button>
-        ))}
-      </section>
-
-      <section className="grid gap-3 md:grid-cols-3">
-        {MODES.map((item) => (
-          <button key={item.id} type="button" onClick={() => { setMode(item.id); setPreview(null); }} className={choice(mode === item.id)}>
-            <span className="block font-semibold">{item.label}</span>
-            <span className="mt-1 block text-sm text-muted">{item.hint}</span>
-          </button>
-        ))}
-      </section>
+      <PageHeader
+        title="Importar planilha"
+        description="Excel ou CSV. A nota entra pela matrícula, não pela ordem das linhas. Célula vazia não vira zero. Nada é gravado antes da confirmação."
+        actions={
+          <>
+            <Button type="button" variant="soft" onClick={() => downloadTemplate(kind)}>Modelo desta importação</Button>
+            <Button type="button" variant="ghost" onClick={() => downloadDemo430()}>Planilha fictícia de 430 alunos</Button>
+          </>
+        }
+      />
+      <ol className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {["Arquivo", "Tipo de dado", "Mapeamento", "Prévia", "Confirmação", "Resultado"].map((label, index) => {
+          const current = index + 1;
+          const done = current < step || (current === 6 && Boolean(report));
+          const active = current === step;
+          return (
+            <li key={label} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${active ? "border-pine bg-pine-soft text-pine" : done ? "border-ok/30 bg-ok-bg text-ok" : "border-line bg-card text-muted"}`}>
+              {current}. {label}
+            </li>
+          );
+        })}
+      </ol>
 
       <section className="rounded-card border border-line bg-card p-4">
-        <h2 className="text-xl">1. Arquivo</h2>
+        <h2>1. Arquivo</h2>
         <input
           className="mt-3 block w-full text-sm"
           type="file"
@@ -216,17 +210,40 @@ function ImportPage() {
         {fileName ? <p className="mt-2 text-sm text-muted">{fileName}</p> : null}
       </section>
 
+      <section>
+        <h2 className="mb-2">2. Tipo de dado</h2>
+        <div className="grid gap-3 md:grid-cols-3">
+        {KINDS.map((item) => (
+          <button key={item.id} type="button" onClick={() => changeKind(item.id)} className={choice(kind === item.id)}>
+            {item.label}
+          </button>
+        ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2">Modo de gravação</h2>
+        <div className="grid gap-3 md:grid-cols-3">
+        {MODES.map((item) => (
+          <button key={item.id} type="button" onClick={() => { setMode(item.id); setPreview(null); }} className={choice(mode === item.id)}>
+            <span className="block font-semibold">{item.label}</span>
+            <span className="mt-1 block text-sm text-muted">{item.hint}</span>
+          </button>
+        ))}
+        </div>
+      </section>
+
       {sheet ? (
         <>
           <section className="grid gap-3 md:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">2. Aba</span>
+              <span className="font-medium">Aba</span>
               <select className={controlClass} value={sheet.name} onChange={(event) => changeSheet(event.target.value)} aria-label="Aba da planilha">
                 {sheets.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">3. Linha do cabeçalho</span>
+              <span className="font-medium">Linha do cabeçalho</span>
               <input
                 className={controlClass}
                 type="number"
@@ -244,7 +261,7 @@ function ImportPage() {
           </section>
 
           <section className="rounded-card border border-line bg-card p-4">
-            <h2 className="text-xl">4. Mapear colunas</h2>
+            <h2>3. Mapear colunas</h2>
             <p className="mt-1 text-sm text-muted">Ano de destino: {workspace.years.find((year) => year.id === yearId)?.label}. Troque o ano no topo se a planilha for de outro período.</p>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               {fields.map((field) => (
@@ -279,7 +296,7 @@ function ImportPage() {
           </section>
 
           <section className="overflow-auto rounded-card border border-line bg-card">
-            <h2 className="px-4 pt-4 text-xl">5. Amostra</h2>
+            <h2 className="px-4 pt-4">4. Amostra e validação</h2>
             <p className="px-4 text-sm text-muted">{records.length} linhas com algum dado. As linhas de exemplo fictício também entram se você não apagá-las.</p>
             <table className="mt-2 w-full min-w-[640px] text-sm">
               <thead className="bg-soft text-left">
@@ -297,10 +314,10 @@ function ImportPage() {
 
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="soft" disabled={busy != null} onClick={() => void validate()}>
-              {busy === "preview" ? "Validando…" : "6. Validar"}
+              {busy === "preview" ? "Validando…" : "Validar prévia"}
             </Button>
             <Button type="button" disabled={busy != null || !preview} onClick={() => void confirm()}>
-              {busy === "commit" ? "Gravando…" : "7. Confirmar importação"}
+              {busy === "commit" ? "Gravando…" : "Confirmar importação"}
             </Button>
           </div>
         </>
@@ -316,7 +333,7 @@ function ImportPage() {
       ) : null}
       {report ? (
         <ReportCard
-          title="8. Relatório da importação"
+          title="6. Relatório da importação"
           summary={report.summary}
           lines={report.issues}
           extra={report.stopped ?? null}
@@ -330,11 +347,11 @@ function ReportCard({ title, summary, lines, extra }: { title: string; summary: 
   return (
     <section className="rounded-card border border-line bg-card p-4">
       <h2 className="text-xl">{title}</h2>
-      <ul className="mt-3 grid gap-2 sm:grid-cols-4 text-sm">
-        <li className="rounded-card bg-soft px-3 py-2"><strong className="tabular-nums">{summary.added}</strong> adicionados</li>
-        <li className="rounded-card bg-soft px-3 py-2"><strong className="tabular-nums">{summary.updated}</strong> atualizados</li>
-        <li className="rounded-card bg-soft px-3 py-2"><strong className="tabular-nums">{summary.ignored}</strong> ignorados</li>
-        <li className="rounded-card bg-soft px-3 py-2"><strong className="tabular-nums">{summary.rejected}</strong> rejeitados</li>
+      <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-4">
+        <li className="rounded-lg bg-ok-bg px-3 py-2 text-ok"><strong className="tabular-nums">{summary.added}</strong> adicionados</li>
+        <li className="rounded-lg bg-pine-soft px-3 py-2 text-pine"><strong className="tabular-nums">{summary.updated}</strong> atualizados</li>
+        <li className="rounded-lg bg-soft px-3 py-2 text-muted"><strong className="tabular-nums">{summary.ignored}</strong> ignorados</li>
+        <li className="rounded-lg bg-danger-bg px-3 py-2 text-danger"><strong className="tabular-nums">{summary.rejected}</strong> rejeitados</li>
       </ul>
       {extra ? <p className="mt-3 text-sm text-danger">{extra}</p> : null}
       <ul className="mt-3 flex max-h-80 flex-col gap-1 overflow-auto text-sm">
@@ -346,7 +363,7 @@ function ReportCard({ title, summary, lines, extra }: { title: string; summary: 
 }
 
 function choice(active: boolean) {
-  return `rounded-card border p-3 text-left text-sm ${active ? "border-pine bg-soft" : "border-line bg-card"}`;
+  return `rounded-lg border p-3 text-left text-sm ${active ? "border-pine bg-pine-soft" : "border-line bg-card"}`;
 }
 
 function headerRow(rows: unknown[][], index: number) {

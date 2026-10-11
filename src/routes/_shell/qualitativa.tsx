@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, Field, controlClass, errText } from "@/components/ui";
+import { Button, Field, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import { deleteQual, listQual, listStudents, saveCriterion, saveQual } from "@/lib/school/api";
 import { todayBR } from "@/lib/school/format";
 
@@ -32,15 +32,15 @@ function QualPage() {
   if (!workspace) return null;
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-3xl">Avaliação qualitativa</h1>
-        <p className="text-sm text-pretty text-muted">Registre comportamentos observáveis. Estes níveis não viram nota numérica.</p>
-      </div>
+      <PageHeader
+        title="Avaliação qualitativa"
+        description="Registre comportamentos observáveis. Estes níveis não viram nota numérica e não entram no cálculo da média."
+      />
       <section className="rounded-card border border-line bg-card p-4">
         <h2 className="text-xl">Critérios</h2>
         <ul className="mt-3 flex flex-col gap-2 text-sm">
           {workspace.criteria.map((item) => (
-            <li key={item.id} className="rounded-card bg-soft px-3 py-2">
+            <li key={item.id} className="rounded-lg border border-line bg-paper px-3 py-3">
               <p className="font-semibold">{item.name}{item.active ? "" : " · inativo"}</p>
               <p className="text-muted">{item.description}</p>
               <p>{item.scale.join(" · ")}</p>
@@ -80,7 +80,7 @@ function QualPage() {
       </section>
       <section className="rounded-card border border-line bg-card p-4">
         <h2 className="text-xl">Lançar</h2>
-        <div className="mt-3 grid gap-3 md:grid-cols-4">
+        <div className="mt-3 grid gap-3 rounded-lg border border-line bg-paper p-3 md:grid-cols-4">
           <select className={controlClass} value={classId} onChange={(event) => setClassId(event.target.value)} aria-label="Turma">
             <option value="">Turma</option>
             {classes.map((klass) => <option key={klass.id} value={klass.id}>{klass.series}º {klass.name}</option>)}
@@ -135,6 +135,7 @@ function QualPage() {
       </section>
       <section className="rounded-card border border-line bg-card p-4">
         <h2 className="text-xl">Histórico</h2>
+        {history.isLoading ? <div className="mt-3"><Notice>Carregando histórico…</Notice></div> : null}
         <ul className="mt-3 flex flex-col gap-2 text-sm">
           {history.data?.length === 0 ? <li className="text-muted">Nenhum registro neste filtro.</li> : null}
           {history.data?.map((record) => (

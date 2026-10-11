@@ -39,21 +39,27 @@ function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-paper text-ink lg:grid-cols-2">
-      <section className="flex flex-col justify-between bg-pine px-8 py-10 text-pine-fg">
-        <p className="text-sm font-semibold tracking-wide uppercase">Ensino Médio integrado</p>
+    <main className="grid min-h-screen bg-paper text-ink lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <section className="hidden flex-col justify-between bg-pine px-10 py-12 text-pine-fg lg:flex">
+        <p className="text-sm font-semibold tracking-wide">Ensino Médio integrado</p>
         <div>
-          <h1 className="max-w-md text-4xl">Gestão Escolar PRO</h1>
-          <p className="mt-4 max-w-md text-pretty text-pine-fg/80">
+          <h1 className="max-w-md text-4xl font-semibold text-pine-fg">Gestão Escolar PRO</h1>
+          <p className="mt-4 max-w-md text-pretty text-pine-fg/85">
             Diário de notas, avaliação qualitativa, frequência e relatórios para quem acompanha turmas de perto.
             Cada conta vê apenas as escolas em que foi autorizada.
           </p>
+          <ul className="mt-8 flex max-w-md flex-col gap-2 text-sm text-pine-fg/90">
+            <li>Notas em branco não viram zero.</li>
+            <li>Recuperação não apaga o lançamento original.</li>
+            <li>Avaliação qualitativa permanece separada da nota numérica.</li>
+          </ul>
         </div>
-        <p className="text-sm text-pine-fg/70">Notas em branco não viram zero. Recuperação não apaga o lançamento original.</p>
+        <p className="text-sm text-pine-fg/75">Acesso restrito às escolas autorizadas para esta conta.</p>
       </section>
-      <section className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <h2 className="text-2xl">Entrar</h2>
+      <section className="flex items-center justify-center px-5 py-12">
+        <div className="w-full max-w-sm rounded-card border border-line bg-card p-6">
+          <p className="text-xs font-semibold tracking-wide text-pine uppercase lg:hidden">Gestão Escolar PRO</p>
+          <h2 className="mt-1 text-2xl">{mode === "up" ? "Criar conta" : "Entrar"}</h2>
           <p className="mt-1 text-sm text-muted">Use Google, X ou uma conta com e-mail e senha.</p>
           <div className="mt-6 flex flex-col gap-2">
             {GROK_PROVIDERS.map((provider) => (
@@ -63,15 +69,15 @@ function LoginPage() {
             ))}
           </div>
           <form className="mt-6 flex flex-col gap-3" onSubmit={onSubmit}>
-            {mode === "up" ? <input name="name" required placeholder="Seu nome" className={controlClass} /> : null}
-            <input name="email" type="email" required placeholder="E-mail" autoComplete="email" className={controlClass} />
-            <input name="password" type="password" required placeholder="Senha" autoComplete={mode === "up" ? "new-password" : "current-password"} className={controlClass} />
-            {error ? <p className="text-sm text-danger">{error}</p> : null}
+            {mode === "up" ? <input name="name" required placeholder="Seu nome" aria-label="Seu nome" className={controlClass} /> : null}
+            <input name="email" type="email" required placeholder="E-mail" aria-label="E-mail" autoComplete="email" className={controlClass} />
+            <input name="password" type="password" required placeholder="Senha" aria-label="Senha" autoComplete={mode === "up" ? "new-password" : "current-password"} className={controlClass} />
+            {error ? <p role="alert" className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger">{error}</p> : null}
             <Button type="submit" disabled={pending}>
               {pending ? "Aguarde…" : mode === "up" ? "Criar conta" : "Entrar com e-mail"}
             </Button>
           </form>
-          <button type="button" className="mt-4 h-11 text-sm text-pine" onClick={() => setMode(mode === "in" ? "up" : "in")}>
+          <button type="button" className="mt-4 h-11 text-sm font-semibold text-pine" onClick={() => { setMode(mode === "in" ? "up" : "in"); setError(null); }}>
             {mode === "in" ? "Ainda não tenho conta" : "Já tenho conta"}
           </button>
         </div>

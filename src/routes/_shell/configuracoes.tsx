@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, Field, controlClass, errText } from "@/components/ui";
+import { Button, Field, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import {
   activateYear,
   deleteCourse,
@@ -36,7 +36,7 @@ function SettingsPage() {
     enabled: Boolean(workspace && (workspace.role === "admin" || workspace.role === "coordenacao")),
     queryFn: () => listAudit({ data: { schoolId: workspace!.school.id } }),
   });
-  if (!workspace) return <p className="text-sm text-muted">Carregando…</p>;
+  if (!workspace) return <Notice>Carregando…</Notice>;
   const canSettings = workspace.role === "admin" || workspace.role === "coordenacao";
   const isAdmin = workspace.role === "admin";
   const periods = workspace.periods.filter((period) => period.yearId === yearId);
@@ -55,12 +55,15 @@ function SettingsPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
-      <div>
-        <h1 className="text-3xl">Configurações</h1>
-        <p className="text-sm text-muted">
-          Você está como {roleLabel(workspace.role)} em {school.name}. Cada professor só acessa as escolas em que foi autorizado.
-        </p>
-      </div>
+      <PageHeader
+        title="Configurações"
+        description={`Você está como ${roleLabel(workspace.role)} em ${school.name}. Cada professor só acessa as escolas em que foi autorizado.`}
+      />
+      <section className="rounded-card border border-pine/30 bg-pine-soft p-4">
+        <p className="text-xs font-semibold tracking-wide text-pine uppercase">Contexto ativo</p>
+        <p className="mt-1 text-lg font-semibold">{school.name}</p>
+        <p className="text-sm text-muted">Ano letivo {workspace.years.find((year) => year.id === yearId)?.label ?? "não selecionado"} · papel {roleLabel(workspace.role)}</p>
+      </section>
 
       {workspace.memberships.length > 1 ? (
         <section className="rounded-card border border-line bg-card p-4">
@@ -87,7 +90,8 @@ function SettingsPage() {
       </section>
 
       <section className="rounded-card border border-line bg-card p-4">
-        <h2 className="text-xl">Critérios de cálculo e frequência</h2>
+        <h2>Critérios de cálculo e frequência</h2>
+        <p className="mt-1 text-sm text-muted">Estas regras alimentam médias, recuperação e frequência. Alterá-las muda o cálculo dali em diante, não o histórico já exportado.</p>
         <ul className="mt-2 list-disc pl-5 text-sm text-muted">
           {workspace.rules.map((rule) => <li key={rule}>{rule}</li>)}
         </ul>
@@ -169,7 +173,8 @@ function SettingsPage() {
 
       {canSettings ? (
         <section className="rounded-card border border-line bg-card p-4">
-          <h2 className="text-xl">Ano letivo e períodos</h2>
+          <h2>Ano letivo e períodos</h2>
+          <p className="mt-1 text-sm text-muted">O ano ativo aparece no topo da aplicação. Renomear um período não altera notas já lançadas.</p>
           <ul className="mt-3 flex flex-col gap-2 text-sm">
             {workspace.years.map((year) => (
               <li key={year.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
@@ -212,7 +217,8 @@ function SettingsPage() {
       ) : null}
 
       <section className="rounded-card border border-line bg-card p-4">
-        <h2 className="text-xl">Disciplinas</h2>
+        <h2>Disciplinas</h2>
+        <p className="mt-1 text-sm text-muted">Excluir só é possível quando não há avaliações vinculadas.</p>
         <ul className="mt-3 flex flex-col gap-2 text-sm">
           {workspace.subjects.map((subject) => (
             <li key={subject.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
@@ -246,7 +252,8 @@ function SettingsPage() {
       </section>
 
       <section className="rounded-card border border-line bg-card p-4">
-        <h2 className="text-xl">Cursos técnicos</h2>
+        <h2>Cursos técnicos</h2>
+        <p className="mt-1 text-sm text-muted">Excluir um curso deixa as turmas sem curso. O histórico de notas permanece.</p>
         <ul className="mt-3 flex flex-col gap-2 text-sm">
           {workspace.courses.map((course) => (
             <li key={course.id} className="flex items-center justify-between border-t border-line pt-2">
@@ -278,7 +285,7 @@ function SettingsPage() {
 
       {canSettings ? (
         <section className="rounded-card border border-line bg-card p-4">
-          <h2 className="text-xl">Professores responsáveis</h2>
+          <h2>Equipe</h2>
           <p className="text-sm text-muted">Lista de nomes para organizar as turmas. Não cria login.</p>
           <ul className="mt-3 flex flex-col gap-2 text-sm">
             {workspace.staff.map((person) => (
@@ -305,7 +312,8 @@ function SettingsPage() {
       ) : null}
 
       <section className="rounded-card border border-line bg-card p-4">
-        <h2 className="text-xl">Acesso de outras pessoas</h2>
+          <h2>Acesso de outras pessoas</h2>
+          <p className="mt-1 text-sm text-muted">Convite, papéis e disciplinas permitidas. Remover acesso é uma ação administrativa e pede confirmação.</p>
         <form
           className="mt-3 flex flex-wrap gap-2"
           onSubmit={(event) => {
@@ -386,9 +394,9 @@ function SettingsPage() {
 
       {canSettings ? (
         <section className="rounded-card border border-line bg-card p-4">
-          <h2 className="text-xl">Cópia dos dados</h2>
+          <h2>Cópia e auditoria</h2>
           <p className="mt-1 text-sm text-pretty text-muted">
-            Este arquivo é uma exportação integral autorizada, feita quando você pede. Não há cópia automática rodando em segundo plano.
+            A cópia integral só é gerada quando você pede. O registro abaixo lista operações já confirmadas pelo sistema.
           </p>
           <Button
             type="button"

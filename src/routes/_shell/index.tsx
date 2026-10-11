@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useSchool } from "@/components/school-context";
-import { Badge, Empty, Stat, controlClass } from "@/components/ui";
+import { Badge, Empty, Notice, PageHeader, Stat, controlClass } from "@/components/ui";
 import { getDashboard, listStudents } from "@/lib/school/api";
 import { fmtGrade, fmtPercent } from "@/lib/school/format";
 
@@ -43,21 +43,18 @@ function DashboardPage() {
     queryFn: () => listStudents({ data: { schoolId: workspace!.school.id, yearId, query: studentQuery.trim(), page: 1, pageSize: 8, archived: false } }),
   });
 
-  if (loading) return <p className="text-sm text-muted">Carregando a escola…</p>;
-  if (error) return <p className="text-sm text-danger">{error}</p>;
+  if (loading) return <Notice>Carregando a escola…</Notice>;
+  if (error) return <Notice tone="error">{error}</Notice>;
   if (!workspace) return null;
   const data = dash.data;
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-3xl">Painel</h1>
-        <p className="mt-1 text-sm text-muted">
-          {workspace.school.name} · {workspace.counts.students} estudantes · {workspace.counts.classes} turmas · {workspace.counts.subjects} disciplinas · {workspace.counts.assessments} avaliações.
-          Célula vazia não entra como zero.
-        </p>
-      </div>
-      <div className="grid gap-3 md:grid-cols-4">
+      <PageHeader
+        title="Painel"
+        description={`${workspace.school.name} · ${workspace.counts.students} estudantes · ${workspace.counts.classes} turmas · ${workspace.counts.subjects} disciplinas · ${workspace.counts.assessments} avaliações. Célula vazia não entra como zero.`}
+      />
+      <div className="grid gap-3 rounded-card border border-line bg-card p-3 md:grid-cols-4">
         <select className={controlClass} value={series} onChange={(event) => { setSeries(event.target.value); setStudentId(""); }} aria-label="Série">
           <option value="">Todas as séries</option>
           <option value="1">1º ano</option>
@@ -124,8 +121,8 @@ function DashboardPage() {
           </ul>
         ) : null}
       </div>
-      {dash.isLoading ? <p className="text-sm text-muted">Calculando indicadores…</p> : null}
-      {dash.error instanceof Error ? <p className="text-sm text-danger">{dash.error.message}</p> : null}
+      {dash.isLoading ? <Notice>Calculando indicadores…</Notice> : null}
+      {dash.error instanceof Error ? <Notice tone="error">{dash.error.message}</Notice> : null}
       {data && data.studentCount === 0 ? (
         <Empty title="Ainda não há turma neste filtro" text="Cadastre estudantes e lançamentos. O painel não mostra números de exemplo no lugar dos dados reais." />
       ) : null}
@@ -222,11 +219,11 @@ function SimpleTable({ title, columns, rows }: { title: string; columns: string[
   return (
     <section className="overflow-auto rounded-card border border-line bg-card">
       <h2 className="px-4 pt-4 text-xl">{title}</h2>
-      <table className="mt-2 w-full text-sm">
+      <table className="data-table">
         <thead>
-          <tr className="text-left text-muted">
+          <tr className="text-left">
             {columns.map((column) => (
-              <th key={column} className="px-4 py-2 font-medium">
+              <th key={column} className="font-medium">
                 {column}
               </th>
             ))}
@@ -235,15 +232,15 @@ function SimpleTable({ title, columns, rows }: { title: string; columns: string[
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td className="px-4 py-3 text-muted" colSpan={columns.length}>
+              <td className="text-muted" colSpan={columns.length}>
                 Sem dados neste recorte.
               </td>
             </tr>
           ) : (
             rows.map((row, index) => (
-              <tr key={index} className="border-t border-line">
+              <tr key={index}>
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="px-4 py-2 tabular-nums">
+                  <td key={cellIndex} className={cellIndex === 0 ? "" : "num"}>
                     {cell}
                   </td>
                 ))}

@@ -108,23 +108,22 @@ export function UserButton() {
           className="h-8 w-8 rounded-full object-cover"
         />
       ) : (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-black/10 text-sm font-medium dark:bg-white/20">
+        <span className="grid size-8 place-items-center rounded-full bg-pine-soft text-sm font-semibold text-pine">
           {label.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="text-sm font-medium">{label}</span>
+      <span className="hidden max-w-32 truncate text-sm font-medium sm:inline">{label}</span>
       {authEnabled && !gateSession && (
         <button
           type="button"
           disabled={signingOut}
           onClick={() => {
             setSigningOut(true);
-            // Success navigates away; on failure re-enable so it can be retried.
             void signOut().catch(() => setSigningOut(false));
           }}
-          className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline disabled:cursor-wait disabled:no-underline"
+          className="h-11 cursor-pointer rounded-lg px-2 text-sm font-medium text-muted hover:bg-soft hover:text-ink disabled:cursor-wait"
         >
-          {signingOut ? "Signing out…" : "Sign out"}
+          {signingOut ? "Saindo…" : "Sair"}
         </button>
       )}
     </div>
