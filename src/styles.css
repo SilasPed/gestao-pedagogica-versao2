@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --paper: #f3efe6;
+  --ink: #1c2430;
+  --card: #fffdf8;
+  --line: #e3d8c8;
+  --muted: #5c6570;
+  --pine: #1b4d3e;
+  --pine-fg: #f4f7f5;
+  --clay: #9a431f;
+  --danger: #8e2a2a;
+  --ok: #1d6b42;
+  --warn: #8a5a10;
+  --soft: #efe6d6;
+  color-scheme: light;
+}
+
+.dark {
+  --paper: #101412;
+  --ink: #ece7dc;
+  --card: #1a211c;
+  --line: #2e3832;
+  --muted: #a8b0a8;
+  --pine: #9ed4b8;
+  --pine-fg: #102119;
+  --clay: #e3ab86;
+  --danger: #f0b0aa;
+  --ok: #8dcea8;
+  --warn: #e6c27a;
+  --soft: #24302a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-pine: var(--pine);
+  --color-pine-fg: var(--pine-fg);
+  --color-clay: var(--clay);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-soft: var(--soft);
+  --radius-card: 0.9rem;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  body {
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    text-wrap: balance;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+.sheet {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.sheet th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--soft);
+}
+.sheet th:first-child,
+.sheet td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card);
+}
+.sheet th:first-child {
+  z-index: 3;
+  background: var(--soft);
+}
