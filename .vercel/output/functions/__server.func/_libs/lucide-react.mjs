@@ -158,6 +158,43 @@ var ChartColumn = createLucideIcon("chart-column", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var ClipboardList = createLucideIcon("clipboard-list", [
+	["rect", {
+		width: "8",
+		height: "4",
+		x: "8",
+		y: "2",
+		rx: "1",
+		ry: "1",
+		key: "tgr4d6"
+	}],
+	["path", {
+		d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2",
+		key: "116196"
+	}],
+	["path", {
+		d: "M12 11h4",
+		key: "1jrz19"
+	}],
+	["path", {
+		d: "M12 16h4",
+		key: "n85exb"
+	}],
+	["path", {
+		d: "M8 11h.01",
+		key: "1dfujw"
+	}],
+	["path", {
+		d: "M8 16h.01",
+		key: "18s6g9"
+	}]
+]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var FileUp = createLucideIcon("file-up", [
 	["path", {
 		d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z",
@@ -245,6 +282,21 @@ var Menu = createLucideIcon("menu", [
 var Moon = createLucideIcon("moon", [["path", {
 	d: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z",
 	key: "a7tn18"
+}]]);
+/**
+* @license lucide-react v0.510.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Search = createLucideIcon("search", [["path", {
+	d: "m21 21-4.34-4.34",
+	key: "14j7rj"
+}], ["circle", {
+	cx: "11",
+	cy: "11",
+	r: "8",
+	key: "4ej97u"
 }]]);
 /**
 * @license lucide-react v0.510.0 - ISC
@@ -377,4 +429,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { Sun as a, Menu as c, ChartColumn as d, CalendarCheck as f, Table2 as i, LayoutDashboard as l, Users as n, Settings as o, BookOpenCheck as p, TriangleAlert as r, Moon as s, X as t, FileUp as u };
+export { Sun as a, Moon as c, FileUp as d, ClipboardList as f, BookOpenCheck as h, Table2 as i, Menu as l, CalendarCheck as m, Users as n, Settings as o, ChartColumn as p, TriangleAlert as r, Search as s, X as t, LayoutDashboard as u };

@@ -7,9 +7,9 @@
       "status": 200,
       "title": "Gestão Escolar PRO",
       "hasCanvas": false,
-      "bodyTextLen": 405,
-      "bodyTextHash": "4f120d4145dcd5d5522eca532c726c2ab6c653fa89f897bd44b0f78fcda03f6f",
-      "bodyTextPrefix": "ENSINO MÉDIO INTEGRADO Gestão Escolar PRO Diário de notas, avali",
+      "bodyTextLen": 520,
+      "bodyTextHash": "4462a7bfa583a16fa68590a428eabfec949cba6dee19c51ed4e30461f6a0641d",
+      "bodyTextPrefix": "Ensino Médio integrado Gestão Escolar PRO Diário de notas, avali",
       "horizontalOverflow": false,
       "consoleErrors": [],
       "pageErrors": [],
@@ -21,9 +21,9 @@
       "status": 200,
       "title": "Gestão Escolar PRO",
       "hasCanvas": false,
-      "bodyTextLen": 405,
-      "bodyTextHash": "4f120d4145dcd5d5522eca532c726c2ab6c653fa89f897bd44b0f78fcda03f6f",
-      "bodyTextPrefix": "ENSINO MÉDIO INTEGRADO Gestão Escolar PRO Diário de notas, avali",
+      "bodyTextLen": 149,
+      "bodyTextHash": "7f2a161ebc620bfd962adfe066f7348ea04613858d93318758b45792e3374366",
+      "bodyTextPrefix": "GESTÃO ESCOLAR PRO Entrar Use Google, X ou uma conta com e-mail ",
       "horizontalOverflow": false,
       "consoleErrors": [],
       "pageErrors": [],
@@ -35,9 +35,6 @@
   ],
   "authWarnings": [],
   "verdictFile": "/workspace/screenshots/app-builder-built.json",
-  "divergesFromBaseline": true,
-  "baselineReasons": [
-    "desktop: body text changed (18 -> 405 chars, hash mismatch)",
-    "mobile: body text changed (18 -> 405 chars, hash mismatch)"
-  ]
+  "divergesFromBaseline": false,
+  "baselineReasons": []
 }
