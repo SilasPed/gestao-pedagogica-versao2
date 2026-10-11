@@ -12,9 +12,15 @@ async function guard<T>(work: () => Promise<T>): Promise<T> {
     return await work();
   } catch (error) {
     if (error instanceof UserError) throw error;
-    console.error(error);
+    console.error(loggedSchoolError(error));
     throw new UserError("Não foi possível concluir a operação. Verifique a conexão e tente de novo.");
   }
+}
+
+function loggedSchoolError(error: unknown) {
+  const name = error instanceof Error ? error.name : "Error";
+  const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  return `[school] ${name}${code ? ` ${code}` : ""}`;
 }
 
 export const getWorkspace = createServerFn({ method: "POST" }).middleware([authMiddleware])

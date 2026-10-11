@@ -77,19 +77,18 @@ export function parseDateCell(raw: unknown): string | null | "invalid" {
     return utc.toISOString().slice(0, 10);
   }
   const s = String(raw).trim();
-  const br = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/.exec(s);
-  if (br) {
-    const d = Number(br[1]);
-    const m = Number(br[2]);
-    const y = Number(br[3]);
-    if (m < 1 || m > 12 || d < 1 || d > 31) return "invalid";
-    const dt = new Date(Date.UTC(y, m - 1, d));
-    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return "invalid";
-    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  }
+  const br = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(s);
+  if (br) return calendarDate(Number(br[3]), Number(br[2]), Number(br[1]));
   const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  if (iso) return calendarDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
   return "invalid";
+}
+
+function calendarDate(year: number, month: number, day: number): string | "invalid" {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return "invalid";
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return "invalid";
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export function parseKind(raw: unknown): AssessmentKind | null | "invalid" {

@@ -33,7 +33,7 @@ import {
   type ImportPlan,
 } from "./import-logic.ts";
 import { buildReport, type ExportKind } from "./reports.ts";
-import { cleanEnrollment, cleanName, clip, parseSeries } from "./validate.ts";
+import { cleanEnrollment, cleanName, clip, parseDateCell, parseSeries } from "./validate.ts";
 
 type Role = "admin" | "coordenacao" | "professor";
 type Membership = { school_id: string; role: string; school_name: string; subject_scope: string | null; display_name: string };
@@ -768,6 +768,9 @@ export async function analyticsInputFor(userId: string, schoolId: string | null,
     ]);
   const scopedSubjects = ctx.scope ? subjects.filter((subject) => ctx.scope?.includes(subject.id)) : subjects;
   const subjectIds = new Set(scopedSubjects.map((subject) => subject.id));
+  const scopedAssessmentIds = new Set(
+    assessments.filter((row) => subjectIds.has(String(row.subject_id))).map((row) => String(row.id)),
+  );
   const sessionClass = new Map(sessions.map((session) => [String(session.id), session]));
   const input: AnalyticsInput = {
     policy: policyOf(school),
@@ -805,7 +808,9 @@ export async function analyticsInputFor(userId: string, schoolId: string | null,
         weight: asNumber(row.weight, 1),
         isRecovery: row.is_recovery === true,
       })),
-    scores: scores.map((row) => ({
+    scores: scores
+      .filter((row) => scopedAssessmentIds.has(String(row.assessment_id)))
+      .map((row) => ({
       assessmentId: String(row.assessment_id),
       studentId: String(row.student_id),
       value: asNumberOrNull(row.value),
@@ -1121,7 +1126,9 @@ export async function saveQualFor(userId: string, data: Record<string, unknown>)
   const criterionId = String(data.criterionId ?? "");
   const level = clip(data.level, 80);
   const comment = clip(data.comment, 2000);
-  const date = strOrNull(data.date) ?? todayBR();
+  const parsedDate = parseDateCell(data.date);
+  if (parsedDate === "invalid") throw new UserError("Data do registro inválida.");
+  const date = parsedDate ?? todayBR();
   const periodId = strOrNull(data.periodId);
   const student = await ctx.sql`select id from students where id = ${studentId} and school_id = ${ctx.schoolId}`;
   const criteria = await ctx.sql<{ scale: string }>`select scale from qual_criteria where id = ${criterionId} and school_id = ${ctx.schoolId}`;
@@ -1183,11 +1190,12 @@ export async function saveSessionFor(userId: string, data: { schoolId: string | 
   const ctx = await access(userId, data.schoolId);
   assertRole(ctx.role, "academic");
   if (data.subjectId) assertSubject(ctx.scope, data.subjectId);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) throw new UserError("Data da aula inválida.");
+  const date = parseDateCell(data.date);
+  if (!date || date === "invalid") throw new UserError("Data da aula inválida.");
   const klass = await ctx.sql`select id from classes where id = ${data.classId} and school_id = ${ctx.schoolId}`;
   if (!klass.length) throw new UserError("Turma não encontrada.");
   const id = uid();
-  await ctx.sql`insert into attendance_sessions (id, school_id, class_id, subject_id, period_id, session_date, label) values (${id}, ${ctx.schoolId}, ${data.classId}, ${data.subjectId}, ${data.periodId}, ${data.date}, ${clip(data.label, 80)})`;
+  await ctx.sql`insert into attendance_sessions (id, school_id, class_id, subject_id, period_id, session_date, label) values (${id}, ${ctx.schoolId}, ${data.classId}, ${data.subjectId}, ${data.periodId}, ${date}, ${clip(data.label, 80)})`;
   const students = await ctx.sql<{ id: string }>`select id from students where school_id = ${ctx.schoolId} and class_id = ${data.classId} and archived = false and status = 'ativo'`;
   for (const student of students) {
     await ctx.sql`insert into attendance_marks (id, school_id, session_id, student_id, mark) values (${uid()}, ${ctx.schoolId}, ${id}, ${student.id}, ${"pending"})`;
@@ -1251,7 +1259,9 @@ export async function reportFor(
     yearLabel: loaded.yearLabel,
     notes: data.includeNotes ? loaded.notes : {},
     courseName: loaded.courseName,
-    sessions: sessions.map((row) => ({
+    sessions: sessions
+      .filter((row) => !loaded.ctx.scope || !row.subject_id || loaded.ctx.scope.includes(String(row.subject_id)))
+      .map((row) => ({
       id: String(row.id),
       classId: String(row.class_id),
       subjectId: row.subject_id ? String(row.subject_id) : null,

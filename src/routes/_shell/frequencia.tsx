@@ -114,9 +114,14 @@ function AttendancePage() {
                     variant="danger"
                     onClick={async () => {
                       if (!window.confirm("Excluir esta aula e os registros dela?")) return;
-                      await deleteSession({ data: { schoolId: workspace.school.id, id: session.id } });
-                      setSessionId("");
-                      await client.invalidateQueries({ queryKey: ["attendance"] });
+                      try {
+                        await deleteSession({ data: { schoolId: workspace.school.id, id: session.id } });
+                        setSessionId("");
+                        await client.invalidateQueries({ queryKey: ["attendance"] });
+                        toast.success("Aula excluída.");
+                      } catch (error) {
+                        toast.error(errText(error));
+                      }
                     }}
                   >
                     Excluir aula

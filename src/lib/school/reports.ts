@@ -1,4 +1,4 @@
-import type { AnalyticsFilter, AnalyticsInput } from "./analytics.ts";
+import type { AnalyticsInput } from "./analytics.ts";
 import { buildDashboard, buildStudentView } from "./analytics.ts";
 import { academicSituation, periodResult, roundGrade, summarizeItems, type GradeItem, type MarkStatus } from "./calc.ts";
 import { fmtGrade, seriesLabel } from "./format.ts";

@@ -12,6 +12,9 @@ describe("validação de planilha", () => {
     assert.equal(parseGradeCell("12", 10).kind, "invalid");
     assert.equal(parseDateCell("11/10/2026"), "2026-10-11");
     assert.equal(parseDateCell("31/02/2026"), "invalid");
+    assert.equal(parseDateCell("2026-10-11"), "2026-10-11");
+    assert.equal(parseDateCell("2026-02-31"), "invalid");
+    assert.equal(parseDateCell("2026-13-01"), "invalid");
     assert.equal(parseSeries("2º ano"), "2");
     assert.equal(parseStatus("Concluído"), "concluido");
   });
