@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Badge, Button, Dialog, Empty, Field, controlClass, errText } from "@/components/ui";
+import { Badge, Button, Dialog, Empty, Field, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import { deleteAssessment, getGradebook, saveAssessment, saveScores } from "@/lib/school/api";
 import { ASSESSMENT_KINDS } from "@/lib/school/constants";
 import { academicSituation, neededGrade, summarizeItems, type GradeItem, type MarkStatus } from "@/lib/school/calc";
@@ -21,6 +21,7 @@ function GradesPage() {
   const [periodId, setPeriodId] = useState("");
   const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [saveNote, setSaveNote] = useState<string | null>(null);
   const classes = (workspace?.classes ?? []).filter((klass) => !klass.archived && klass.yearId === yearId);
   const periods = (workspace?.periods ?? []).filter((period) => period.yearId === yearId);
   const book = useQuery({
@@ -29,8 +30,21 @@ function GradesPage() {
     queryFn: () => getGradebook({ data: { schoolId: workspace!.school.id, classId, subjectId, periodId: periodId || null } }),
   });
   useEffect(() => {
-    setDrafts({});
-  }, [book.dataUpdatedAt]);
+    if (!book.data) return;
+    setDrafts((current) => {
+      const next: Record<string, Draft> = {};
+      for (const [key, draft] of Object.entries(current)) {
+        const [assessmentId, studentId] = key.split(":");
+        const stored = book.data.scores.find((score) => score.assessmentId === assessmentId && score.studentId === studentId);
+        const storedStatus = (stored?.status as MarkStatus) || "pending";
+        const storedText = storedStatus === "graded" && stored?.value != null ? String(stored.value).replace(".", ",") : "";
+        if (!sameDraft(draft, storedText, storedStatus)) next[key] = draft;
+      }
+      const same =
+        Object.keys(current).length === Object.keys(next).length && Object.keys(next).every((key) => next[key] === current[key]);
+      return same ? current : next;
+    });
+  }, [book.data]);
   const save = useMutation({
     mutationFn: saveScores,
     onError: (error) => toast.error(errText(error)),
@@ -85,22 +99,22 @@ function GradesPage() {
       await save.mutateAsync({
         data: { schoolId: workspace.school.id, items: [{ assessmentId, studentId, value: draft.status === "graded" ? value : null, status: draft.status }] },
       });
+      setSaveNote("Lançamento gravado.");
       await client.invalidateQueries({ queryKey: ["gradebook"] });
     } catch (error) {
+      setSaveNote(null);
       toast.error(errText(error));
     }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl">Diário de notas</h1>
-          <p className="text-sm text-muted">Edição direta na tabela. A média aparece ao lado e segue a regra das configurações.</p>
-        </div>
-        <Button type="button" disabled={!classId || !subjectId} onClick={() => setOpen(true)}>Nova avaliação</Button>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <PageHeader
+        title="Diário de notas"
+        description="Edição direta na tabela. A média aparece ao lado e segue a regra das configurações. Setas movem a célula. Enter grava."
+        actions={<Button type="button" disabled={!classId || !subjectId} onClick={() => setOpen(true)}>Nova avaliação</Button>}
+      />
+      <div className="grid gap-3 rounded-card border border-line bg-card p-3 md:grid-cols-3">
         <select className={controlClass} value={classId} onChange={(event) => setClassId(event.target.value)} aria-label="Turma">
           <option value="">Escolha a turma</option>
           {classes.map((klass) => <option key={klass.id} value={klass.id}>{seriesLabel(klass.series)} {klass.name}</option>)}
@@ -115,7 +129,9 @@ function GradesPage() {
         </select>
       </div>
       {!classId || !subjectId ? <Empty title="Escolha turma e disciplina" text="O diário abre só com dados dessa combinação." /> : null}
-      {book.isLoading ? <p className="text-sm text-muted">Carregando diário…</p> : null}
+      {book.isLoading ? <Notice>Carregando diário…</Notice> : null}
+      {save.isPending ? <Notice>Gravando lançamento… O valor digitado permanece na célula até a confirmação.</Notice> : null}
+      {saveNote && !save.isPending ? <Notice tone="ok">{saveNote}</Notice> : null}
       {book.data ? (
         <>
           <details className="rounded-card border border-line bg-card p-4 text-sm">
@@ -124,18 +140,18 @@ function GradesPage() {
           </details>
           {book.data.students.length === 0 ? <Empty title="Turma sem estudantes ativos" text="Cadastre os alunos nessa turma antes de lançar notas." /> : null}
           {book.data.students.length > 0 ? (
-            <div className="max-h-[70vh] overflow-auto rounded-card border border-line">
+            <div className="max-h-[70vh] overflow-auto rounded-card border border-line bg-card">
               <table className="sheet min-w-full text-sm">
                 <thead>
                   <tr>
                     <th className="min-w-48 px-3 py-2 text-left">Estudante</th>
                     {book.data.assessments.map((assessment) => (
                       <th key={assessment.id} className="min-w-40 px-2 py-2 text-left font-medium">
-                        <span className="block">{assessment.name}</span>
+                        <span className="block text-sm text-ink">{assessment.name}</span>
                         <span className="block text-xs font-normal text-muted">{assessment.periodName} · peso {assessment.weight} · máx. {assessment.maxScore}</span>
                         <button
                           type="button"
-                          className="text-xs text-danger"
+                          className="text-xs font-semibold text-danger"
                           onClick={async () => {
                             if (!workspace || !window.confirm(`Excluir ${assessment.name}? As notas desta coluna saem juntas. As outras avaliações ficam.`)) return;
                             try {
@@ -150,11 +166,11 @@ function GradesPage() {
                         </button>
                       </th>
                     ))}
-                    <th className="px-3 py-2 text-left">Resultado</th>
+                    <th className="px-3 py-2 text-right">Resultado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {rows.map((row, rowIndex) => (
                     <tr key={row.student.id} className="border-t border-line">
                       <td className="px-3 py-2 align-top">
                         <p className="font-medium">{row.student.name}</p>
@@ -168,24 +184,40 @@ function GradesPage() {
                           status: item.status,
                         };
                         return (
-                          <td key={assessment.id} className="px-2 py-2 align-top">
+                          <td key={assessment.id} className={markClass(draft.status)}>
                             <input
                               aria-label={`Nota de ${row.student.name} em ${assessment.name}`}
-                              className="h-11 w-full rounded-card border border-line bg-card px-2 text-center tabular-nums"
+                              data-grade-row={rowIndex}
+                              data-grade-col={index}
+                              className="h-11 w-full rounded-lg border border-line bg-card px-2 text-center text-sm font-semibold tabular-nums"
                               value={draft.text}
                               disabled={draft.status !== "graded" && draft.status !== "pending"}
-                              onChange={(event) => setDrafts((current) => ({ ...current, [key]: { text: event.target.value, status: "graded" } }))}
+                              onChange={(event) => {
+                                setSaveNote(null);
+                                setDrafts((current) => ({ ...current, [key]: { text: event.target.value, status: "graded" } }));
+                              }}
+                              onFocus={(event) => event.currentTarget.select()}
                               onBlur={() => {
                                 const next = drafts[key];
                                 if (next) void commit(key, assessment.id, row.student.id, next);
                               }}
                               onKeyDown={(event) => {
-                                if (event.key === "Enter") (event.currentTarget as HTMLInputElement).blur();
+                                if (event.key === "Enter") {
+                                  event.preventDefault();
+                                  event.currentTarget.blur();
+                                  return;
+                                }
+                                const delta = { ArrowDown: [1, 0], ArrowUp: [-1, 0], ArrowRight: [0, 1], ArrowLeft: [0, -1] }[event.key as "ArrowDown" | "ArrowUp" | "ArrowRight" | "ArrowLeft"];
+                                if (!delta) return;
+                                const next = document.querySelector<HTMLInputElement>(`[data-grade-row="${rowIndex + delta[0]}"][data-grade-col="${index + delta[1]}"]`);
+                                if (!next) return;
+                                event.preventDefault();
+                                next.focus();
                               }}
                             />
                             <select
                               aria-label={`Situação de ${row.student.name} em ${assessment.name}`}
-                              className="mt-1 h-10 w-full rounded-card border border-line bg-card text-xs"
+                              className="mt-1 h-10 w-full rounded-lg border border-line bg-card text-xs"
                               value={draft.status}
                               onChange={(event) => {
                                 const status = event.target.value as MarkStatus;
@@ -203,7 +235,7 @@ function GradesPage() {
                           </td>
                         );
                       })}
-                      <td className="px-3 py-2 align-top">
+                      <td className="px-3 py-2 text-right align-top">
                         <p className="font-semibold tabular-nums">{fmtGrade(row.summary.average)}</p>
                         <Badge tone={row.situation.tone}>{row.situation.label}</Badge>
                         {row.needed ? <p className="mt-1 max-w-56 text-xs text-pretty text-muted">{row.needed.explanation}</p> : null}
@@ -267,4 +299,22 @@ function GradesPage() {
       </Dialog>
     </div>
   );
+}
+
+function markClass(status: MarkStatus) {
+  if (status === "pending") return "mark-pending px-2 py-2 align-top";
+  if (status === "absent") return "mark-bad px-2 py-2 align-top";
+  if (status === "excused" || status === "na") return "mark-off px-2 py-2 align-top";
+  return "px-2 py-2 align-top";
+}
+
+function sameDraft(draft: Draft, storedText: string, storedStatus: string) {
+  if (draft.status !== storedStatus) return false;
+  const left = draft.text.trim().replace(",", ".");
+  const right = storedText.trim().replace(",", ".");
+  if (left === "" && right === "") return true;
+  const a = Number(left);
+  const b = Number(right);
+  if (left !== "" && right !== "" && !Number.isNaN(a) && !Number.isNaN(b)) return a === b;
+  return left === right;
 }

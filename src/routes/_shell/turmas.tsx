@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, Dialog, Empty, Field, controlClass, errText } from "@/components/ui";
+import { Button, Dialog, Empty, Field, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import { archiveClass, saveClass, saveClassSubjects, saveCourse } from "@/lib/school/api";
 import { seriesLabel } from "@/lib/school/format";
 
@@ -27,16 +27,14 @@ function ClassesPage() {
     },
     onError: (error) => toast.error(errText(error)),
   });
-  if (!workspace) return <p className="text-sm text-muted">Carregando…</p>;
+  if (!workspace) return <Notice>Carregando…</Notice>;
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl">Turmas</h1>
-          <p className="text-sm text-muted">Série, curso técnico e professores da turma. Arquivar não reescreve notas antigas.</p>
-        </div>
-        <Button type="button" onClick={() => { setEditing(null); setOpen(true); }}>Nova turma</Button>
-      </div>
+      <PageHeader
+        title="Turmas"
+        description="Série, curso técnico e professores da turma. Arquivar não reescreve notas antigas."
+        actions={<Button type="button" onClick={() => { setEditing(null); setOpen(true); }}>Nova turma</Button>}
+      />
       <form
         className="flex flex-wrap gap-2"
         onSubmit={async (event) => {

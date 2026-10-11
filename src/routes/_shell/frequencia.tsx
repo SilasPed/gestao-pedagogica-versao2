@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, controlClass, errText } from "@/components/ui";
+import { Badge, Button, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import { deleteSession, getAttendance, saveMarks, saveSession } from "@/lib/school/api";
 import { FREQ_MARKS } from "@/lib/school/constants";
 import { frequencyOf } from "@/lib/school/calc";
@@ -32,11 +32,11 @@ function AttendancePage() {
   if (!workspace) return null;
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl">Frequência</h1>
-        <p className="text-sm text-muted">Aula sem registro não conta como falta. Pendente fica de fora do percentual.</p>
-      </div>
-      <div className="grid gap-3 md:grid-cols-4">
+      <PageHeader
+        title="Frequência"
+        description="Aula sem registro não conta como falta. Pendente fica de fora do percentual. Ações em lote pedem confirmação."
+      />
+      <div className="grid gap-3 rounded-card border border-line bg-card p-3 md:grid-cols-4">
         <select className={controlClass} value={classId} onChange={(event) => { setClassId(event.target.value); setSessionId(""); }} aria-label="Turma">
           <option value="">Turma</option>
           {classes.map((klass) => <option key={klass.id} value={klass.id}>{seriesLabel(klass.series)} {klass.name}</option>)}
@@ -64,12 +64,20 @@ function AttendancePage() {
       >
         Abrir aula
       </Button>
+      {board.isLoading ? <Notice>Carregando frequência…</Notice> : null}
+      {board.error instanceof Error ? <Notice tone="error">{board.error.message}</Notice> : null}
       {board.data ? (
         <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-          <ul className="flex flex-col gap-2">
+          <ul className="flex max-h-[70vh] flex-col gap-2 overflow-auto">
+            {board.data.sessions.length === 0 ? <li className="text-sm text-muted">Nenhuma aula nesta turma.</li> : null}
             {board.data.sessions.map((item) => (
               <li key={item.id}>
-                <button type="button" className="h-11 w-full rounded-card border border-line bg-card px-3 text-left text-sm" onClick={() => setSessionId(item.id)}>
+                <button
+                  type="button"
+                  aria-current={session?.id === item.id ? "true" : undefined}
+                  className={`h-11 w-full rounded-lg border px-3 text-left text-sm ${session?.id === item.id ? "border-pine bg-pine-soft font-semibold text-pine" : "border-line bg-card"}`}
+                  onClick={() => setSessionId(item.id)}
+                >
                   {item.date} · {item.label || "Aula"}
                 </button>
               </li>
@@ -78,8 +86,8 @@ function AttendancePage() {
           {session && policy ? (
             <section className="rounded-card border border-line bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-xl">{session.date} · {session.label || "Aula"}</h2>
-                <div className="flex gap-2">
+                <h2>{session.date} · {session.label || "Aula"}</h2>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant="soft"
@@ -93,6 +101,7 @@ function AttendancePage() {
                           },
                         });
                         await client.invalidateQueries({ queryKey: ["attendance"] });
+                        toast.success("Presenças registradas.");
                       } catch (error) {
                         toast.error(errText(error));
                       }
@@ -122,8 +131,8 @@ function AttendancePage() {
                     policy,
                   );
                   return (
-                    <li key={student.id} className="grid items-center gap-2 border-t border-line py-2 md:grid-cols-[1fr_180px_120px]">
-                      <span>{student.name}</span>
+                    <li key={student.id} className="grid items-center gap-2 border-t border-line py-2 md:grid-cols-[1fr_180px_auto_120px]">
+                      <span className="font-medium">{student.name}</span>
                       <select
                         className={controlClass}
                         value={mark}
@@ -139,15 +148,23 @@ function AttendancePage() {
                       >
                         {FREQ_MARKS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                       </select>
-                      <span className="text-sm tabular-nums text-muted">{fmtPercent(personal.percent)}</span>
+                      <Badge tone={freqTone(mark)}>{FREQ_MARKS.find((item) => item.id === mark)?.label ?? mark}</Badge>
+                      <span className="text-right text-sm tabular-nums text-muted">{fmtPercent(personal.percent)}</span>
                     </li>
                   );
                 })}
               </ul>
             </section>
-          ) : <p className="text-sm text-muted">Nenhuma aula registrada nesta turma.</p>}
+          ) : <Notice>Nenhuma aula registrada nesta turma.</Notice>}
         </div>
       ) : null}
     </div>
   );
+}
+
+function freqTone(mark: string): "ok" | "bad" | "warn" | "muted" {
+  if (mark === "present") return "ok";
+  if (mark === "absent") return "bad";
+  if (mark === "justified" || mark === "late") return "warn";
+  return "muted";
 }

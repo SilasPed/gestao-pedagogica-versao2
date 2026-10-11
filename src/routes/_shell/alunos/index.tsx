@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, Dialog, Empty, Field, controlClass, errText } from "@/components/ui";
+import { Badge, Button, Dialog, Empty, Field, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import { STUDENT_STATUSES } from "@/lib/school/constants";
 import { archiveStudent, listStudents, saveStudent } from "@/lib/school/api";
 import { seriesLabel } from "@/lib/school/format";
@@ -68,16 +68,12 @@ function StudentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl">Alunos</h1>
-          <p className="text-sm text-muted">Busca por nome ou matrícula. Arquivar não apaga o histórico de notas.</p>
-        </div>
-        <Button type="button" onClick={() => { setEditing(null); setConfirmDuplicate(false); setOpen(true); }}>
-          Novo estudante
-        </Button>
-      </div>
-      <div className="grid gap-3 md:grid-cols-4">
+      <PageHeader
+        title="Alunos"
+        description="Busca por nome ou matrícula. Arquivar não apaga o histórico de notas."
+        actions={<Button type="button" onClick={() => { setEditing(null); setConfirmDuplicate(false); setOpen(true); }}>Novo estudante</Button>}
+      />
+      <div className="grid gap-3 rounded-card border border-line bg-card p-3 md:grid-cols-4">
         <input className={controlClass} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nome ou matrícula" aria-label="Buscar" />
         <select className={controlClass} value={series} onChange={(event) => setSeries(event.target.value)} aria-label="Série">
           <option value="">Todas as séries</option>
@@ -100,31 +96,37 @@ function StudentsPage() {
         <input type="checkbox" checked={archived} onChange={(event) => setArchived(event.target.checked)} />
         Mostrar arquivados
       </label>
-      {list.isLoading ? <p className="text-sm text-muted">Buscando…</p> : null}
-      {list.data && list.data.total === 0 ? <Empty title="Nenhum estudante neste filtro" text="Cadastre alguém ou importe uma planilha. A lista não traz nomes de demonstração." /> : null}
+      {list.isLoading ? <Notice>Buscando estudantes…</Notice> : null}
+      {list.error instanceof Error ? <Notice tone="error">{list.error.message}</Notice> : null}
+      {list.data && list.data.total === 0 ? (
+        <Empty
+          title={query || classId || series || status || archived ? "Nenhum resultado para esta busca" : "Nenhum estudante cadastrado"}
+          text={query || classId || series || status || archived ? "Nada corresponde aos filtros. Limpe a busca ou escolha outra turma. O cadastro real não foi alterado." : "Cadastre alguém ou importe uma planilha. A lista não traz nomes de demonstração."}
+        />
+      ) : null}
       {list.data && list.data.total > 0 ? (
         <div className="overflow-auto rounded-card border border-line bg-card">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-soft text-left">
+          <table className="data-table min-w-[720px]">
+            <thead>
               <tr>
                 {["Nome", "Matrícula", "Série", "Turma", "Curso", "Situação", ""].map((head) => (
-                  <th key={head} className="px-3 py-3 font-medium">{head}</th>
+                  <th key={head} className="font-medium">{head}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {list.data.rows.map((row) => (
-                <tr key={row.id} className="border-t border-line">
-                  <td className="px-3 py-2 font-medium">
+                <tr key={row.id}>
+                  <td className="font-medium">
                     <Link to="/alunos/$studentId" params={{ studentId: row.id }} className="underline-offset-2 hover:underline">{row.fullName}</Link>
                   </td>
-                  <td className="px-3 py-2 tabular-nums">{row.enrollment ?? "—"}</td>
-                  <td className="px-3 py-2">{seriesLabel(row.series)}</td>
-                  <td className="px-3 py-2">{row.className ?? "—"}</td>
-                  <td className="px-3 py-2">{row.courseName ?? "—"}</td>
-                  <td className="px-3 py-2">{STUDENT_STATUSES.find((item) => item.id === row.status)?.label ?? row.status}</td>
-                  <td className="px-3 py-2 text-right">
-                    <button type="button" className="h-11 px-2 text-pine" onClick={() => { setEditing(row.id); setConfirmDuplicate(false); setOpen(true); }}>Editar</button>
+                  <td className="tabular-nums text-muted">{row.enrollment ?? "—"}</td>
+                  <td>{seriesLabel(row.series)}</td>
+                  <td>{row.className ?? "—"}</td>
+                  <td>{row.courseName ?? "—"}</td>
+                  <td><Badge tone={row.archived ? "muted" : row.status === "ativo" ? "ok" : row.status === "transferido" ? "warn" : "muted"}>{STUDENT_STATUSES.find((item) => item.id === row.status)?.label ?? row.status}{row.archived ? " · arquivado" : ""}</Badge></td>
+                  <td className="text-right">
+                    <button type="button" className="h-11 px-2 text-sm font-semibold text-pine" onClick={() => { setEditing(row.id); setConfirmDuplicate(false); setOpen(true); }}>Editar</button>
                     <button
                       type="button"
                       className="h-11 px-2 text-muted"
@@ -206,9 +208,9 @@ function StudentsPage() {
             </select>
           </Field>
           <Field label="Observações pedagógicas">
-            <textarea name="notes" defaultValue={current?.notes ?? ""} className="min-h-24 w-full rounded-card border border-line bg-card p-3 text-sm" />
+            <textarea name="notes" defaultValue={current?.notes ?? ""} className="min-h-24 w-full rounded-lg border border-line bg-card p-3 text-sm" />
           </Field>
-          {confirmDuplicate ? <p className="text-sm text-warn">Há um cadastro parecido. Envie de novo para confirmar que não é duplicidade acidental.</p> : null}
+          {confirmDuplicate ? <p role="alert" className="rounded-lg border border-warn/30 bg-warn-bg px-3 py-2 text-sm text-warn">Há um cadastro parecido. Envie de novo para confirmar que não é duplicidade acidental.</p> : null}
           <Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando…" : confirmDuplicate ? "Confirmar e salvar" : "Salvar"}</Button>
         </form>
       </Dialog>

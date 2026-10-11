@@ -27,7 +27,7 @@ function StudentPage() {
   const data = profile.data;
   return (
     <div className="flex flex-col gap-5">
-      <Link to="/alunos" search={{ q: "" }} className="text-sm text-pine">Voltar aos alunos</Link>
+      <Link to="/alunos" search={{ q: "" }} className="inline-flex h-11 items-center text-sm font-semibold text-pine">Voltar aos alunos</Link>
       {profile.isLoading ? <p className="text-sm text-muted">Carregando perfil…</p> : null}
       {profile.error instanceof Error ? <p className="text-sm text-danger">{profile.error.message}</p> : null}
       {data ? (
@@ -68,17 +68,17 @@ function StudentPage() {
           <section className="grid gap-3 sm:grid-cols-3">
             <article className="rounded-card border border-line bg-card p-4">
               <p className="text-xs text-muted uppercase">Média no ano</p>
-              <p className="mt-1 font-serif text-3xl tabular-nums">{fmtGrade(data.view.average)}</p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">{fmtGrade(data.view.average)}</p>
               <p className="text-xs text-muted">Mínima {fmtGrade(data.view.passing)}. Comparação só com a própria evolução.</p>
             </article>
             <article className="rounded-card border border-line bg-card p-4">
               <p className="text-xs text-muted uppercase">Frequência</p>
-              <p className="mt-1 font-serif text-3xl tabular-nums">{fmtPercent(data.view.frequency?.percent)}</p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">{fmtPercent(data.view.frequency?.percent)}</p>
               <p className="text-xs text-muted">{data.view.frequency ? `${data.view.frequency.absences} faltas em ${data.view.frequency.considered} aulas registradas` : "Sem aulas registradas"}</p>
             </article>
             <article className="rounded-card border border-line bg-card p-4">
               <p className="text-xs text-muted uppercase">Pendências</p>
-              <p className="mt-1 font-serif text-3xl tabular-nums">{data.view.assessments.filter((item) => item.status === "pending").length}</p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">{data.view.assessments.filter((item) => item.status === "pending").length}</p>
             </article>
           </section>
           <section className="rounded-card border border-line bg-card p-4">

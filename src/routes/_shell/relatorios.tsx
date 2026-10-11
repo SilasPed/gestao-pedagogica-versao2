@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSchool } from "@/components/school-context";
-import { Button, controlClass, errText } from "@/components/ui";
+import { Button, Notice, PageHeader, controlClass, errText } from "@/components/ui";
 import { buildExport, getDashboard } from "@/lib/school/api";
 import { EXPORT_COLUMNS, type ExportKind } from "@/lib/school/reports";
 import { saveReport } from "@/lib/school/files";
@@ -20,6 +20,12 @@ const KINDS: { id: ExportKind; label: string; question: string }[] = [
   { id: "frequency", label: "Frequência", question: "Como estão as presenças registradas?" },
   { id: "class_overview", label: "Visão da turma", question: "Qual turma evoluiu mais neste recorte?" },
   { id: "annual_history", label: "Histórico anual", question: "Qual é o histórico do ano por estudante?" },
+];
+
+const GROUPS: { title: string; ids: ExportKind[] }[] = [
+  { title: "Cadastro", ids: ["students"] },
+  { title: "Notas e resultados", ids: ["gradebook", "report_cards", "period_results", "below_average", "recovery", "annual_history"] },
+  { title: "Acompanhamento", ids: ["qualitative", "frequency", "class_overview"] },
 ];
 
 export const Route = createFileRoute("/_shell/relatorios")({ component: ReportsPage });
@@ -66,11 +72,11 @@ function ReportsPage() {
   if (!workspace) return null;
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl">Relatórios</h1>
-        <p className="text-sm text-muted">O arquivo usa o filtro atual. Observações qualitativas só entram se você marcar a opção.</p>
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <PageHeader
+        title="Relatórios"
+        description="O arquivo usa o filtro atual. Observações qualitativas só entram se você marcar a opção. Nenhum tipo de relatório foi removido."
+      />
+      <div className="grid gap-3 rounded-card border border-line bg-card p-3 md:grid-cols-3">
         <select className={controlClass} value={classId} onChange={(event) => setClassId(event.target.value)} aria-label="Turma">
           <option value="">Todas as turmas</option>
           {classes.map((klass) => <option key={klass.id} value={klass.id}>{seriesLabel(klass.series)} {klass.name}</option>)}
@@ -84,12 +90,19 @@ function ReportsPage() {
           {periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}
         </select>
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        {KINDS.map((item) => (
-          <button key={item.id} type="button" onClick={() => { setKind(item.id); setColumns(EXPORT_COLUMNS[item.id]); }} className={`rounded-card border p-4 text-left ${kind === item.id ? "border-pine bg-soft" : "border-line bg-card"}`}>
-            <p className="font-semibold">{item.label}</p>
-            <p className="text-sm text-muted">{item.question}</p>
-          </button>
+      <div className="flex flex-col gap-4">
+        {GROUPS.map((group) => (
+          <section key={group.title}>
+            <h2 className="mb-2 text-sm font-semibold tracking-wide text-muted uppercase">{group.title}</h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              {KINDS.filter((item) => group.ids.includes(item.id)).map((item) => (
+                <button key={item.id} type="button" onClick={() => { setKind(item.id); setColumns(EXPORT_COLUMNS[item.id]); }} className={`rounded-card border p-4 text-left ${kind === item.id ? "border-pine bg-pine-soft" : "border-line bg-card"}`}>
+                  <p className="font-semibold">{item.label}</p>
+                  <p className="text-sm text-muted">{item.question}</p>
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
       <fieldset className="rounded-card border border-line bg-card p-4">
@@ -111,11 +124,23 @@ function ReportsPage() {
           Incluir observações e comentários pedagógicos
         </label>
       </fieldset>
+      <section className="rounded-card border border-line bg-card p-4 text-sm">
+        <h2>Resumo antes de exportar</h2>
+        <ul className="mt-2 flex flex-col gap-1 text-muted">
+          <li>Relatório: {KINDS.find((item) => item.id === kind)?.label}</li>
+          <li>Turma: {classes.find((klass) => klass.id === classId) ? `${seriesLabel(classes.find((klass) => klass.id === classId)!.series)} ${classes.find((klass) => klass.id === classId)!.name}` : "Todas"}</li>
+          <li>Disciplina: {workspace.subjects.find((subject) => subject.id === subjectId)?.name ?? "Todas"}</li>
+          <li>Período: {periods.find((period) => period.id === periodId)?.name ?? "Ano todo"}</li>
+          <li>Colunas: {columns.join(", ") || "nenhuma"}</li>
+          <li>Observações: {includeNotes ? "incluídas" : "fora do arquivo"}</li>
+        </ul>
+      </section>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" disabled={Boolean(busy)} onClick={() => download("xlsx")}>{busy === "xlsx" ? "Gerando…" : "Excel"}</Button>
-        <Button type="button" variant="soft" disabled={Boolean(busy)} onClick={() => download("csv")}>{busy === "csv" ? "Gerando…" : "CSV"}</Button>
-        <Button type="button" variant="soft" disabled={Boolean(busy)} onClick={() => download("pdf")}>{busy === "pdf" ? "Gerando…" : "PDF"}</Button>
+        <Button type="button" disabled={Boolean(busy)} onClick={() => download("xlsx")}>{busy === "xlsx" ? "Gerando Excel…" : "Excel"}</Button>
+        <Button type="button" variant="soft" disabled={Boolean(busy)} onClick={() => download("csv")}>{busy === "csv" ? "Gerando CSV…" : "CSV"}</Button>
+        <Button type="button" variant="soft" disabled={Boolean(busy)} onClick={() => download("pdf")}>{busy === "pdf" ? "Gerando PDF…" : "PDF"}</Button>
       </div>
+      {busy ? <Notice>Gerando o arquivo {busy.toUpperCase()}. A exportação só conclui quando o download é disparado.</Notice> : null}
       {dash.data ? (
         <section className="rounded-card border border-line bg-card p-4 text-sm">
           <h2 className="text-xl">Leitura deste recorte</h2>
